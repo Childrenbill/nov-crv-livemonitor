@@ -324,7 +324,12 @@ function nextWindow(code, now){
   return null;
 }
 function techsForCode(code, opDate){
-  const wIdx=findWeekForDate(opDate);
+  // N-D (00-12) es la cola nocturna del día anterior: se rige por la semana previa.
+  // Así, el N-D de las 00:00 del jueves (cambio de semana) lo cubre la cuadrilla SALIENTE (su último día),
+  // y la cuadrilla entrante (que venía de D-N) recién ingresa el viernes 00:00.
+  let schedDate=opDate;
+  if(code==='N-D'){ schedDate=new Date(opDate); schedDate.setDate(schedDate.getDate()-1); }
+  const wIdx=findWeekForDate(schedDate);
   if(wIdx<0) return [];
   const w=DATA.weeks[wIdx];
   if(code==='D'){
@@ -498,7 +503,11 @@ function render(){
     let nextHtml='';
     if(nxc){
       const nc=TURNOS[nxc]||{color:'var(--f)',name:nxc};
-      const detail = (nxc==='F') ? 'franco' : (nxc==='V' ? 'vacaciones' : ('mañana '+hh(TECH_WINDOWS[nxc]?TECH_WINDOWS[nxc][0]:0)));
+      let detail;
+      if(nxc==='F') detail='franco';
+      else if(nxc==='V') detail='vacaciones';
+      else if(nxc==='N-D' && win.code==='D-N') detail='pasado mañana 00:00';
+      else detail='mañana '+hh(TECH_WINDOWS[nxc]?TECH_WINDOWS[nxc][0]:0);
       nextHtml='<span class="gnext">luego <span class="np" style="background:'+nc.color+'">'+nxc+'</span> '+detail+'</span>';
     }
     return '<div class="group" style="--g-col:'+tc.color+'">'+
