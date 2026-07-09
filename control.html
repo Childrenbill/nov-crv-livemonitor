@@ -119,7 +119,12 @@ function activeWindow(code, now){
   return null;
 }
 function techsForCode(code, opDate){
-  const wIdx=findWeekForDate(opDate);
+  // N-D (00-12) es la cola nocturna del día anterior: se rige por la semana previa.
+  // Así, el N-D de las 00:00 del jueves (cambio de semana) lo cubre la cuadrilla SALIENTE (su último día),
+  // y la cuadrilla entrante (que venía de D-N) recién ingresa el viernes 00:00.
+  let schedDate=opDate;
+  if(code==='N-D'){ schedDate=new Date(opDate); schedDate.setDate(schedDate.getDate()-1); }
+  const wIdx=findWeekForDate(schedDate);
   if(wIdx<0) return [];
   const w=DATA.weeks[wIdx];
   if(code==='D'){
