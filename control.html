@@ -63,6 +63,21 @@ h2 span{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
 .kmin{width:5.4rem;font-family:'JetBrains Mono',monospace;font-size:0.92rem;font-weight:700;background:var(--bg-2);border:1px solid var(--line-2);color:var(--text);border-radius:0.6rem;padding:0.5rem 0.5rem;text-align:right;min-height:2.4rem}
 .kmin:focus{outline:none;border-color:var(--max-teal)}
 .kmdate{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);white-space:nowrap}
+.fsvc{display:flex;flex-direction:column;gap:0.4rem;padding-top:0.6rem;margin-top:0.2rem;border-top:1px dashed var(--line)}
+.fsvc .svc-rem{font-family:'JetBrains Mono',monospace;font-size:0.82rem;font-weight:800;display:flex;align-items:center;gap:0.4rem}
+.fsvc .svc-rem .sdot{width:0.6rem;height:0.6rem;border-radius:50%;flex-shrink:0}
+.fsvc.ok .svc-rem{color:var(--d)} .fsvc.ok .sdot{background:var(--d)}
+.fsvc.warn .svc-rem{color:var(--dn)} .fsvc.warn .sdot{background:var(--dn)}
+.fsvc.due .svc-rem{color:#ff6b66} .fsvc.due .sdot{background:#d9433f}
+.fsvc.due{animation:chkblink 1.4s ease-in-out infinite}
+.fsvc .svc-none{font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--muted)}
+.svc-cfg{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}
+.svc-mode{cursor:pointer;user-select:none;font-family:'JetBrains Mono',monospace;font-size:0.66rem;font-weight:800;padding:0.35rem 0.5rem;border-radius:0.5rem;border:1px solid var(--line-2);color:var(--text-soft);background:var(--bg-2);min-height:2rem;display:flex;align-items:center}
+.svcin{width:4.2rem;font-family:'JetBrains Mono',monospace;font-size:0.82rem;font-weight:700;background:var(--bg-2);border:1px solid var(--line-2);color:var(--text);border-radius:0.5rem;padding:0.4rem 0.4rem;text-align:right;min-height:2rem}
+.svcin:focus{outline:none;border-color:var(--max-teal)}
+.svc-lbl{font-family:'JetBrains Mono',monospace;font-size:0.66rem;color:var(--muted)}
+.svc-done{cursor:pointer;user-select:none;font-family:'JetBrains Mono',monospace;font-size:0.66rem;font-weight:800;padding:0.35rem 0.55rem;border-radius:0.5rem;border:1px solid var(--d);color:var(--d);background:rgba(93,200,138,0.08);min-height:2rem;display:flex;align-items:center}
+.chkwrap.hidden{visibility:hidden}
 .fleetcard .fhead{display:flex;align-items:baseline;justify-content:space-between}
 .fleetcard .fcode{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.15rem;color:var(--text)}
 .fleetcard .fplate{font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--muted);letter-spacing:0.05em}
@@ -226,33 +241,89 @@ function fleetEditing(){
   const a=document.activeElement;
   return g && a && g.contains(a) && (a.tagName==='INPUT' || a.tagName==='SELECT');
 }
+const SVC_YELLOW=1500, SVC_RED=750;
+const FLEET_ORDER={campo:0, base:1, taller:2};
+function fmtKm(n){ return (n||0).toLocaleString('es-AR'); }
+function computeSvc(code){
+  const d=fleetData[code]||{};
+  const km=parseInt(d.km||'',10);
+  const mode=d.svcMode||'interval';
+  let next=null;
+  if(mode==='interval'){
+    const iv=parseInt(d.svcInterval||'',10);
+    const last=parseInt(d.svcLastKm||'0',10)||0;
+    if(iv>0) next=last+iv;
+  } else {
+    const nx=parseInt(d.svcNextKm||'',10);
+    if(nx>0) next=nx;
+  }
+  let rem=null, color='none';
+  if(next!=null && !isNaN(km)){ rem=next-km; color = rem<=SVC_RED?'due':(rem<=SVC_YELLOW?'warn':'ok'); }
+  return {mode,next,rem,color};
+}
+function cycleSvcMode(code){
+  const cur=(fleetData[code]&&fleetData[code].svcMode)||'interval';
+  fbdb.ref('fleet/'+code+'/svcMode').set(cur==='interval'?'manual':'interval');
+}
+function setSvcInterval(code,val){ fbdb.ref('fleet/'+code+'/svcInterval').set(String(val).replace(/[^0-9]/g,'')); }
+function setSvcNextKm(code,val){ fbdb.ref('fleet/'+code+'/svcNextKm').set(String(val).replace(/[^0-9]/g,'')); }
+function serviceDone(code){
+  const km=parseInt((fleetData[code]||{}).km||'0',10)||0;
+  fbdb.ref('fleet/'+code).update({svcLastKm:String(km), svcFecha:hoyStr()});
+}
+function svcBlockHtml(code){
+  const s=computeSvc(code); const d=fleetData[code]||{};
+  let rem;
+  if(s.rem==null) rem='<span class="svc-none">Service: sin configurar</span>';
+  else rem='<span class="svc-rem"><span class="sdot"></span>SERVICE · faltan '+fmtKm(s.rem)+' km</span>';
+  let cfg='<span class="svc-mode" onclick="cycleSvcMode(\''+code+'\')">'+(s.mode==='interval'?'INT':'MAN')+'</span>';
+  if(s.mode==='interval'){
+    cfg+='<span class="svc-lbl">cada</span><input class="svcin" inputmode="numeric" value="'+(d.svcInterval||'')+'" placeholder="10000" onchange="setSvcInterval(\''+code+'\',this.value)" onblur="if(fleetDirty)renderFleet()">'+
+         '<span class="svc-done" onclick="serviceDone(\''+code+'\')">✓ hecho</span>';
+  } else {
+    cfg+='<span class="svc-lbl">próx</span><input class="svcin" inputmode="numeric" value="'+(d.svcNextKm||'')+'" placeholder="235000" onchange="setSvcNextKm(\''+code+'\',this.value)" onblur="if(fleetDirty)renderFleet()">';
+  }
+  return '<div class="fsvc '+s.color+'">'+rem+'<div class="svc-cfg">'+cfg+'</div></div>';
+}
 function renderFleet(){
   if(fleetEditing()){ fleetDirty=true; return; }
   fleetDirty=false;
   const asignables = DATA.people.concat(DATA.supervisors);
-  document.getElementById('fleetList').innerHTML = FLEET_LIST.map(v=>{
+  const ordered = FLEET_LIST.map((v,idx)=>({v,idx})).sort((a,b)=>{
+    const ea=(fleetData[a.v.code]||{}).estado||'base';
+    const eb=(fleetData[b.v.code]||{}).estado||'base';
+    return (FLEET_ORDER[ea]-FLEET_ORDER[eb]) || (a.idx-b.idx);
+  }).map(o=>o.v);
+  document.getElementById('fleetList').innerHTML = ordered.map(v=>{
     const d=fleetData[v.code]||{};
     const est=d.estado||'base';
     const col=FLEET_COLOR[est]||'var(--f)';
     const chk=!!d.checklist;
+    const asignada=!!d.tecnico;
+    const chkVisible = asignada && (est==='campo'||est==='base');
+    const cardCls = chkVisible ? (chk?'chk-ok':'chk-no') : '';
     const opts=['<option value="">— Sin asignar —</option>'].concat(
       asignables.map(p=>'<option value="'+p+'"'+(d.tecnico===p?' selected':'')+'>'+p+'</option>')
     ).join('');
     const km=d.km||'';
     const kmf=d.kmFecha||'';
-    return '<div class="fleetcard '+(chk?'chk-ok':'chk-no')+'" style="--f-col:'+col+'">'+
+    const chkHtml = chkVisible
+      ? '<span class="chkwrap '+(chk?'on':'')+'" onclick="toggleChecklist(\''+v.code+'\')"><span class="chksw"></span><span class="chklbl">Checklist</span></span>'
+      : '<span class="chkwrap hidden"><span class="chksw"></span><span class="chklbl">Checklist</span></span>';
+    return '<div class="fleetcard '+cardCls+'" style="--f-col:'+col+'">'+
       '<div class="fhead"><span class="fcode">'+v.code+'</span><span class="fplate">'+v.plate+'</span></div>'+
       '<div class="frow">'+
         '<button class="festbtn" onclick="cycleFleetState(\''+v.code+'\')">'+FLEET_LABEL[est]+'</button>'+
         '<select class="ftecsel" onchange="setFleetTech(\''+v.code+'\', this.value)" onblur="if(fleetDirty)renderFleet()">'+opts+'</select>'+
       '</div>'+
       '<div class="fbot">'+
-        '<span class="chkwrap '+(chk?'on':'')+'" onclick="toggleChecklist(\''+v.code+'\')"><span class="chksw"></span><span class="chklbl">Checklist</span></span>'+
+        chkHtml+
         '<span class="kmwrap"><span class="kmlbl">KM</span>'+
           '<input class="kmin" inputmode="numeric" value="'+km+'" placeholder="—" onchange="setFleetKm(\''+v.code+'\', this.value)" onblur="if(fleetDirty)renderFleet()">'+
           '<span class="kmdate">'+(kmf?('· '+kmf):'')+'</span>'+
         '</span>'+
       '</div>'+
+      svcBlockHtml(v.code)+
     '</div>';
   }).join('');
 }
