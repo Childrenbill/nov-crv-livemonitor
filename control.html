@@ -47,7 +47,22 @@ h2 span{color:var(--muted);font-weight:600;text-transform:none;letter-spacing:0}
 .basewrap{background:var(--panel);border:1px dashed var(--line-2);border-radius:1rem;padding:0.8rem;margin-top:0.7rem}
 .basewrap .bl{font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:0.5rem}
 .basechip{font-family:'Manrope',sans-serif;font-weight:700;font-size:0.9rem;background:var(--bg-2);border:1.5px solid var(--b-col,var(--line-2));color:var(--text-soft);padding:0.6rem 0.95rem;border-radius:0.8rem;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:0.4rem;min-height:2.5rem}
-.fleetcard{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--f-col,var(--max-teal));border-radius:1rem;padding:0.9rem 1rem;margin-bottom:0.7rem;display:flex;flex-direction:column;gap:0.6rem}
+.fleetcard{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--f-col,var(--max-teal));border-radius:1rem;padding:0.9rem 1rem;margin-bottom:0.7rem;display:flex;flex-direction:column;gap:0.6rem;transition:background .4s}
+.fleetcard.chk-ok{background:rgba(93,200,138,0.08);border-color:rgba(93,200,138,0.4);border-left-color:var(--f-col,var(--max-teal))}
+.fleetcard.chk-no{border-color:rgba(217,67,63,0.85);border-left-color:#d9433f;animation:chkblink 1.6s ease-in-out infinite}
+@keyframes chkblink{0%,100%{background:rgba(217,67,63,0.16)}50%{background:rgba(217,67,63,0.05)}}
+.fbot{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;flex-wrap:wrap}
+.chkwrap{display:flex;align-items:center;gap:0.45rem;cursor:pointer;user-select:none;min-height:2.4rem}
+.chkwrap .chklbl{font-family:'JetBrains Mono',monospace;font-size:0.66rem;letter-spacing:0.1em;color:var(--text-soft);text-transform:uppercase;font-weight:700}
+.chksw{width:2.6rem;height:1.4rem;border-radius:1.2rem;background:var(--bg-2);border:1px solid var(--line-2);position:relative;transition:background .25s,border-color .25s;flex-shrink:0}
+.chksw::after{content:'';position:absolute;top:0.13rem;left:0.15rem;width:1.05rem;height:1.05rem;border-radius:50%;background:var(--muted);transition:left .25s,background .25s}
+.chkwrap.on .chksw{background:rgba(93,200,138,0.35);border-color:var(--d)}
+.chkwrap.on .chksw::after{left:1.35rem;background:var(--d)}
+.kmwrap{display:flex;align-items:center;gap:0.35rem}
+.kmwrap .kmlbl{font-family:'JetBrains Mono',monospace;font-size:0.66rem;color:var(--muted);letter-spacing:0.08em;font-weight:700}
+.kmin{width:5.4rem;font-family:'JetBrains Mono',monospace;font-size:0.92rem;font-weight:700;background:var(--bg-2);border:1px solid var(--line-2);color:var(--text);border-radius:0.6rem;padding:0.5rem 0.5rem;text-align:right;min-height:2.4rem}
+.kmin:focus{outline:none;border-color:var(--max-teal)}
+.kmdate{font-family:'JetBrains Mono',monospace;font-size:0.62rem;color:var(--muted);white-space:nowrap}
 .fleetcard .fhead{display:flex;align-items:baseline;justify-content:space-between}
 .fleetcard .fcode{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.15rem;color:var(--text)}
 .fleetcard .fplate{font-family:'JetBrains Mono',monospace;font-size:0.72rem;color:var(--muted);letter-spacing:0.05em}
@@ -78,7 +93,7 @@ footer{text-align:center;font-family:'JetBrains Mono',monospace;font-size:0.62re
     <div class="chiprow" id="baseChips"></div>
   </div>
 
-  <h2>Flota <span>· 12 unidades</span></h2>
+  <h2>Flota <span>· rojo = checklist pendiente</span></h2>
   <div id="fleetList"></div>
 
   <footer>NOV Digital Service · Comodoro Rivadavia</footer>
@@ -192,18 +207,51 @@ function cycleFleetState(code){
 function setFleetTech(code, name){
   fbdb.ref('fleet/'+code+'/tecnico').set(name);
 }
+function toggleChecklist(code){
+  const cur=!!(fleetData[code]&&fleetData[code].checklist);
+  fbdb.ref('fleet/'+code+'/checklist').set(!cur);
+  if(!cur){ fbdb.ref('chkDebt/'+code).remove(); } // al completarse, se salda la deuda
+}
+function hoyStr(){
+  const n=new Date();
+  return pad(n.getDate())+'/'+pad(n.getMonth()+1)+'/'+n.getFullYear();
+}
+function setFleetKm(code, val){
+  const v=String(val).replace(/[^0-9]/g,'');
+  fbdb.ref('fleet/'+code).update({km:v, kmFecha: v ? hoyStr() : ''});
+}
+let fleetDirty=false;
+function fleetEditing(){
+  const g=document.getElementById('fleetList');
+  const a=document.activeElement;
+  return g && a && g.contains(a) && (a.tagName==='INPUT' || a.tagName==='SELECT');
+}
 function renderFleet(){
+  if(fleetEditing()){ fleetDirty=true; return; }
+  fleetDirty=false;
+  const asignables = DATA.people.concat(DATA.supervisors);
   document.getElementById('fleetList').innerHTML = FLEET_LIST.map(v=>{
-    const d=fleetData[v.code]||{estado:'base',tecnico:''};
-    const col=FLEET_COLOR[d.estado]||'var(--f)';
+    const d=fleetData[v.code]||{};
+    const est=d.estado||'base';
+    const col=FLEET_COLOR[est]||'var(--f)';
+    const chk=!!d.checklist;
     const opts=['<option value="">— Sin asignar —</option>'].concat(
-      DATA.people.map(p=>'<option value="'+p+'"'+(d.tecnico===p?' selected':'')+'>'+p+'</option>')
+      asignables.map(p=>'<option value="'+p+'"'+(d.tecnico===p?' selected':'')+'>'+p+'</option>')
     ).join('');
-    return '<div class="fleetcard" style="--f-col:'+col+'">'+
+    const km=d.km||'';
+    const kmf=d.kmFecha||'';
+    return '<div class="fleetcard '+(chk?'chk-ok':'chk-no')+'" style="--f-col:'+col+'">'+
       '<div class="fhead"><span class="fcode">'+v.code+'</span><span class="fplate">'+v.plate+'</span></div>'+
       '<div class="frow">'+
-        '<button class="festbtn" onclick="cycleFleetState(\''+v.code+'\')">'+FLEET_LABEL[d.estado]+'</button>'+
-        '<select class="ftecsel" onchange="setFleetTech(\''+v.code+'\', this.value)">'+opts+'</select>'+
+        '<button class="festbtn" onclick="cycleFleetState(\''+v.code+'\')">'+FLEET_LABEL[est]+'</button>'+
+        '<select class="ftecsel" onchange="setFleetTech(\''+v.code+'\', this.value)" onblur="if(fleetDirty)renderFleet()">'+opts+'</select>'+
+      '</div>'+
+      '<div class="fbot">'+
+        '<span class="chkwrap '+(chk?'on':'')+'" onclick="toggleChecklist(\''+v.code+'\')"><span class="chksw"></span><span class="chklbl">Checklist</span></span>'+
+        '<span class="kmwrap"><span class="kmlbl">KM</span>'+
+          '<input class="kmin" inputmode="numeric" value="'+km+'" placeholder="—" onchange="setFleetKm(\''+v.code+'\', this.value)" onblur="if(fleetDirty)renderFleet()">'+
+          '<span class="kmdate">'+(kmf?('· '+kmf):'')+'</span>'+
+        '</span>'+
       '</div>'+
     '</div>';
   }).join('');
