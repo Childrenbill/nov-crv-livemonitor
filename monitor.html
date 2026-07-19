@@ -313,6 +313,8 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
 .lim-wx .wx-gust{font-family:'JetBrains Mono',monospace;font-size:1.25vh;color:var(--text-soft);text-align:right;letter-spacing:0.03em}
 .lim-wx .wx-gust b{color:var(--wc,var(--text));font-size:1.75vh}
 .lim-wx .wx-off{font-family:'JetBrains Mono',monospace;font-size:1.4vh;color:var(--muted);letter-spacing:0.03em}
+.lim-wx .wx-loc{font-family:'JetBrains Mono',monospace;font-size:1.15vh;font-weight:800;letter-spacing:0.14em;color:var(--max-teal);text-transform:uppercase}
+.lim-wx .wx-lbl{font-family:'JetBrains Mono',monospace;font-size:1.05vh;font-weight:800;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase}
 .lim-cell.adverse{border-color:var(--lim-acc)}
 .lim-cell .alt.warn{color:var(--lim-acc);font-weight:700}
 .wg-slot:empty{display:none}
@@ -1350,9 +1352,9 @@ const SUN_LIM={1:{r:'06:25',s:'21:05'},2:{r:'07:07',s:'20:21'},3:{r:'07:49',s:'1
 // Matriz Liviano · km/h (Cuadernillo Movilidad Invierno) por condición
 const LIMITS=[
   {n:'Ruta asfalto',           dia:100, noche:90, lluvia:80, niebla:40, nieve:50, hielo:30},
-  {n:'Ruta ripio',             dia:60,  noche:50, lluvia:50, niebla:30, nieve:40, hielo:20},
   {n:'Caminos ppl · ripio',    dia:60,  noche:50, lluvia:50, niebla:30, nieve:40, hielo:20},
-  {n:'Caminos secund. · ripio',dia:50,  noche:40, lluvia:40, niebla:30, nieve:30, hielo:20}
+  {n:'Caminos secund. · ripio',dia:50,  noche:40, lluvia:40, niebla:30, nieve:30, hielo:20},
+  {n:'Ruta ripio',             dia:60,  noche:50, lluvia:50, niebla:30, nieve:40, hielo:20}
 ];
 const CONDS={
   dia:   {lbl:'DÍA · BUEN CLIMA',   short:'DÍA',    col:'var(--dn)'},
@@ -1436,10 +1438,10 @@ function updateLimits(){
   if(WXok && WX){
     const gc=windCol(WX.gust);
     wx.innerHTML=
-      '<div class="wx-temp"><b>'+WX.temp+'°</b><span>ST '+WX.feels+'° · HR '+WX.rh+'%</span></div>'
+      '<div class="wx-temp"><span class="wx-loc">'+WX_NAME+'</span><b>'+WX.temp+'°</b><span>ST '+WX.feels+'° · HR '+WX.rh+'%</span></div>'
      +'<div class="wx-wind" style="--wc:'+gc+'">'
         +'<div class="wx-arrow" style="transform:rotate('+(WX.dir+180)+'deg)">↑</div>'
-        +'<div class="wx-wv"><b>'+WX.wind+'</b><small>km/h '+windDir(WX.dir)+'</small></div>'
+        +'<div class="wx-wv"><span class="wx-lbl">VIENTO</span><b>'+WX.wind+'</b><small>km/h</small></div>'
         +'<div class="wx-gust">ráfaga<br><b>'+WX.gust+'</b></div>'
      +'</div>';
   } else {
@@ -1476,7 +1478,7 @@ setInterval(()=>{
   else { updateBars(); }
 }, 1000);
 setInterval(render, 60000);
-setInterval(fetchWeather, 10*60*1000);
+setInterval(fetchWeather, 5*60*1000);
 setTimeout(()=>{ location.reload(); }, 6*60*60*1000);
 </script>
 </body>
