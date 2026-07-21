@@ -1976,55 +1976,60 @@ function _fit(g,txt,x,y,maxw,size,weight){let sz=size;g.font=(weight||'700')+' '
 async function buildFlyer(){
   if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
   let logoImg=null;
-  try{const _le=document.querySelector('#pagePlan img.pllogo')||document.querySelector('.hd .logo');
+  try{const _le=document.querySelector('.hd .logo')||document.querySelector('#pagePlan img.pllogo');
       if(_le&&_le.src){logoImg=new Image();logoImg.src=_le.src;await logoImg.decode();}}catch(e){logoImg=null;}
   const rel=relevosData();
   const uAsig=units.filter(u=>u.a||u.b);
-  const W=1080,PAD=70,relH=138,asigH=50;
-  const H=330 + rel.length*relH + (uAsig.length+1)*asigH + 150;
+  const W=1080,PAD=70,relH=140,asigH=50;
+  const H=340 + rel.length*relH + (uAsig.length+1)*asigH + 160;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const g=cv.getContext('2d');
   const TEAL='#26b5b8',INK='#eef1f3',MUT='#8fa0ac',RED='#e0554f',GRN='#5dc88a';
   g.fillStyle='#0e1417';g.fillRect(0,0,W,H);
   g.fillStyle=TEAL;g.fillRect(0,0,W,10);
-  g.textBaseline='alphabetic';
-  const lx = logoImg ? PAD+82 : PAD;
-  if(logoImg){ g.save(); _rr(g,PAD,52,64,64,12); g.clip(); g.drawImage(logoImg,PAD,52,64,64); g.restore(); }
-  g.font='800 22px "JetBrains Mono",monospace';
-  const _pw=g.measureText('SEMANA '+String(week).toUpperCase()).width+40;
-  g.fillStyle=INK;_fit(g,'FLOTA \u00b7 DIGITAL SERVICE CRV',lx,100,W-PAD-lx-_pw-30,44,'800');
-  g.fillStyle=MUT;g.font='700 19px "JetBrains Mono",monospace';
-  g.fillText('GOLFO SAN JORGE \u00b7 COMODORO RIVADAVIA',lx,136);
+  g.textBaseline='alphabetic';g.textAlign='left';
+  if(logoImg){const lh=46,lw=lh*((logoImg.naturalWidth/logoImg.naturalHeight)||5);g.drawImage(logoImg,PAD,44,lw,lh);}
   const pill='SEMANA '+String(week).toUpperCase();
   g.font='800 22px "JetBrains Mono",monospace';
   const pw=g.measureText(pill).width+40;
   g.fillStyle='rgba(38,181,184,0.12)';g.strokeStyle=TEAL;g.lineWidth=2;
-  _rr(g,W-PAD-pw,66,pw,46,12);g.fill();g.stroke();
-  g.fillStyle=TEAL;g.fillText(pill,W-PAD-pw+20,97);
-  let y=178;
+  _rr(g,W-PAD-pw,42,pw,46,12);g.fill();g.stroke();
+  g.fillStyle=TEAL;g.fillText(pill,W-PAD-pw+20,73);
+  g.fillStyle=INK;g.font='800 44px Inter,Arial,sans-serif';g.fillText('FLOTA',PAD,150);
+  g.fillStyle=MUT;g.font='700 18px "JetBrains Mono",monospace';
+  g.fillText('GOLFO SAN JORGE \u00b7 COMODORO RIVADAVIA',PAD,182);
+  let y=210;
   g.strokeStyle='rgba(255,255,255,.10)';g.lineWidth=1;g.beginPath();g.moveTo(PAD,y);g.lineTo(W-PAD,y);g.stroke();
-  y+=52;
+  y+=48;
   g.fillStyle=INK;g.font='800 23px "JetBrains Mono",monospace';g.fillText('RELEVOS DEL D\u00cdA',PAD,y);
   y+=26;
   rel.forEach(r=>{
-    g.fillStyle='rgba(255,255,255,0.035)';_rr(g,PAD,y,W-2*PAD,relH-18,14);g.fill();
-    g.fillStyle=TEAL;g.font='800 40px "JetBrains Mono",monospace';g.fillText(r.h+':00',PAD+26,y+56);
-    g.fillStyle=MUT;g.font='700 15px "JetBrains Mono",monospace';g.fillText((r.units.join('  ')||'SIN VIAJE'),PAD+26,y+88);
-    const cx=PAD+300;
-    g.fillStyle=RED;g.font='800 15px "JetBrains Mono",monospace';g.fillText('BAJAN',cx,y+44);
-    g.fillStyle=INK;_fit(g,(r.bajan.join(' \u00b7 ')||'-'),cx+92,y+44,W-PAD-cx-112,22,'700');
-    g.fillStyle=GRN;g.font='800 15px "JetBrains Mono",monospace';g.fillText('SUBEN',cx,y+84);
-    g.fillStyle=INK;_fit(g,(r.suben.join(' \u00b7 ')||'-'),cx+92,y+84,W-PAD-cx-112,22,'700');
+    const ch=relH-18;
+    g.fillStyle='rgba(255,255,255,0.035)';_rr(g,PAD,y,W-2*PAD,ch,14);g.fill();
+    g.textAlign='left';
+    g.fillStyle=TEAL;g.font='800 40px "JetBrains Mono",monospace';g.fillText(r.h+':00',PAD+26,y+58);
+    g.fillStyle=MUT;g.font='700 14px "JetBrains Mono",monospace';g.fillText('RELEVO',PAD+26,y+88);
+    const cx=PAD+280,mdtZone=230,nameMax=W-PAD-cx-92-mdtZone;
+    g.fillStyle=RED;g.font='800 15px "JetBrains Mono",monospace';g.fillText('BAJAN',cx,y+46);
+    g.fillStyle=INK;_fit(g,(r.bajan.join(' \u00b7 ')||'-'),cx+90,y+46,nameMax,22,'700');
+    g.fillStyle=GRN;g.font='800 15px "JetBrains Mono",monospace';g.fillText('SUBEN',cx,y+86);
+    g.fillStyle=INK;_fit(g,(r.suben.join(' \u00b7 ')||'-'),cx+90,y+86,nameMax,22,'700');
+    const mu=r.units.length?r.units:['\u2014'];
+    g.textAlign='right';g.fillStyle=INK;
+    const rx=W-PAD-30,cyc=y+ch/2;
+    if(mu.length>1){g.font='800 30px "JetBrains Mono",monospace';g.fillText(mu[0],rx,cyc-4);g.fillText(mu[1],rx,cyc+32);}
+    else{g.font='800 46px "JetBrains Mono",monospace';g.fillText(mu[0],rx,cyc+16);}
+    g.textAlign='left';
     y+=relH;
   });
   y+=22;
   g.fillStyle=INK;g.font='800 23px "JetBrains Mono",monospace';g.fillText('ASIGNACI\u00d3N DE UNIDADES',PAD,y);
   y+=40;
-  const drawA=(mdt,det)=>{g.fillStyle=TEAL;g.font='800 20px "JetBrains Mono",monospace';g.fillText(mdt,PAD+8,y);
+  const drawA=(mdt,det)=>{g.textAlign='left';g.fillStyle=TEAL;g.font='800 20px "JetBrains Mono",monospace';g.fillText(mdt,PAD+8,y);
     g.fillStyle=INK;_fit(g,det,PAD+180,y,W-PAD-(PAD+180),20,'700');y+=asigH;};
   uAsig.forEach(u=>drawA(u.mdt||'-',(u.a||'-')+'   /   '+(u.b||'-')+(u.stay?'    (queda en campo)':'')));
   drawA(cp.mdt||'-',(cp.tit||'-')+'    (CP/Pecom \u00b7 titular)');
-  g.fillStyle=MUT;g.font='600 15px "JetBrains Mono",monospace';
+  g.textAlign='left';g.fillStyle=MUT;g.font='600 15px "JetBrains Mono",monospace';
   g.fillText('Generado desde el monitor en vivo \u00b7 NOV Digital Service',PAD,H-42);
   return await new Promise(res=>cv.toBlob(res,'image/png',0.95));
 }
