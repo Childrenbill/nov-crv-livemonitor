@@ -408,6 +408,9 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
 #pagePlan .bkline .bl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);font-weight:700}
 #pagePlan .bkline select{background-color:var(--dn-bg);border-color:#E2C79A;color:var(--dn);font-family:'JetBrains Mono',monospace;font-weight:700}
 #pagePlan .bkline .plnote{font-size:11.5px;color:var(--ink-mute)}
+#pagePlan .bkline .bksup{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#26b5b8;background:rgba(38,181,184,0.10);border:1px solid rgba(38,181,184,0.5);border-radius:7px;padding:3px 8px}
+#pagePlan .plhero .fuelnote{margin-top:12px;padding:8px 12px;border:1px dashed rgba(224,163,74,0.55);border-radius:9px;font-size:11.5px;color:var(--ink-soft);background:rgba(224,163,74,0.06)}
+#pagePlan .plhero .fuelnote b{color:#e0a34a}
 #pagePlan .aparte{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 #pagePlan .acard{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:15px;border-top:3px solid var(--ac,var(--ink-mute))}
 #pagePlan .acard .al{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);font-weight:700;margin-bottom:10px}
@@ -490,7 +493,7 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
 #pagePlan .rel2 .mv.down{background:var(--dn-bg);color:var(--dn)}
 #pagePlan .rel2 .mv.up{background:var(--dia-bg);color:var(--dia)}
 #pagePlan .rel2 .ru{display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0}
-#pagePlan .rel2 .m{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12px;background:var(--surface2);border:1px solid var(--line2);padding:3px 9px;border-radius:7px}
+#pagePlan .rel2 .m{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:12px;background:rgba(38,181,184,0.10);border:1px solid rgba(38,181,184,0.55);color:#26b5b8;padding:3px 9px;border-radius:7px}
 #pagePlan .rel2 .m.stay{color:var(--ink-mute);border-style:dashed;font-weight:600}
 #pagePlan .stayrow{display:flex;align-items:center;gap:9px;margin-bottom:9px}
 #pagePlan .stayrow .plnote{font-size:11px;color:var(--ink-mute)}
@@ -637,6 +640,7 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
       <button class="btn" id="shareBtn" onclick="shareResumen()">Compartir resumen</button>
     </div>
     <div id="relist"></div>
+    <div class="fuelnote">⛽ Unidades que <b>bajan</b>: se entregan con gasoil cargado · responsable el <b>conductor</b> · el <b>supervisor</b> recuerda verificarlo.</div>
   </div>
 
   <div class="ctrls">
@@ -1748,6 +1752,7 @@ function optAsigMdt(cur){
 }
 function freeMdts(){const u=usedMdts();return FLEET.filter(f=>!u.has(f.id));}
 function firstFree(){const f=freeMdts();return f.length?f[0].id:'';}
+function bkSup(grp){try{const sn=supNow(new Date());const d=supForDate(sn.opDate,'D'),n=supForDate(sn.opDate,'N');return grp==='p1'?(d||''):(n||'');}catch(e){return'';}}
 function clearBackupIf(v){if(backup.p1===v)backup.p1='';if(backup.p2===v)backup.p2='';}
 
 function optTec(cur,ph){
@@ -1880,6 +1885,7 @@ function renderRows(){
         <span class="bl">Backup del turno</span>
         <select onchange="setBk('${grp}',this.value)">${optBk(grp)}</select>
         <span class="plnote">${bk?bk+' · '+bkDom+' queda EN BASE lista para reemplazo por rotura/service':'sin unidad de reemplazo asignada'}</span>
+        ${bk?`<span class="bksup">Responsable: ${bkSup(grp)||'—'} · ${grp==='p1'?'sup día':'sup noche'}</span>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1912,9 +1918,9 @@ function relevosData(){
     const colB=gu.map(u=>u.b).filter(Boolean);
     const vA=gu.filter(u=>u.base==='A'&&!u.stay).map(u=>u.mdt||'—');
     const vB=gu.filter(u=>u.base==='B'&&!u.stay).map(u=>u.mdt||'—');
-    // hora A: bajan columna de arriba (A), suben columna de abajo (B); hora B al revés
-    out.push({h:G.hA,units:vA,bajan:colA,suben:colB});
-    out.push({h:G.hB,units:vB,bajan:colB,suben:colA});
+    // hora A: bajan los del turno B, suben los del turno A; hora B al revés
+    out.push({h:G.hA,units:vA,bajan:colB,suben:colA});
+    out.push({h:G.hB,units:vB,bajan:colA,suben:colB});
   }
   return out.sort((x,y)=>x.h.localeCompare(y.h));
 }
@@ -1967,8 +1973,10 @@ function shareText(){
   asig.forEach(x=>{if(x.mdt)L.push(x.mdt+' -> '+(x.sup||'-'));});
   L.push('');
   L.push('BACKUPS EN BASE');
-  if(backup.p1)L.push(backup.p1+' - turno 00-12/12-00');
-  if(backup.p2)L.push(backup.p2+' - turno 06-18/18-06');
+  if(backup.p1)L.push(backup.p1+' - turno 00-12/12-00 - Responsable: '+(bkSup('p1')||'-')+' (sup dia)');
+  if(backup.p2)L.push(backup.p2+' - turno 06-18/18-06 - Responsable: '+(bkSup('p2')||'-')+' (sup noche)');
+  L.push('');
+  L.push('NOTA: la unidad que baja se entrega con gasoil cargado. Responsable el conductor; el supervisor recuerda verificarlo.');
   return L.join('\n');
 }
 function _waves(g,W,H){g.save();g.globalAlpha=0.055;g.strokeStyle='#9aa3ab';g.lineWidth=7;g.lineCap='round';
@@ -1988,7 +1996,7 @@ async function buildFlyer(){
   const rel=relevosData();
   const uAsig=units.filter(u=>u.a||u.b);
   const W=1080,PAD=70,relH=140,asigH=50;
-  const H=340 + rel.length*relH + (uAsig.length+1)*asigH + 160;
+  const H=386 + rel.length*relH + (uAsig.length+1)*asigH + 160;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const g=cv.getContext('2d');
   const TEAL='#26b5b8',INK='#eef1f3',MUT='#8fa0ac',RED='#e0554f',GRN='#5dc88a';
@@ -2036,7 +2044,11 @@ async function buildFlyer(){
     g.textAlign='left';
     y+=relH;
   });
-  y+=22;
+  y+=14;
+  g.fillStyle='#e0a34a';g.font='800 14px "JetBrains Mono",monospace';g.fillText('NOTA',PAD,y);
+  g.fillStyle=MUT;g.font='600 15px "JetBrains Mono",monospace';
+  _fit(g,'Las unidades que bajan se entregan con gasoil cargado \u00b7 responsable el conductor \u00b7 supervisor verifica',PAD+70,y,W-2*PAD-70,15,'600');
+  y+=54;
   g.fillStyle=INK;g.font='800 23px "JetBrains Mono",monospace';g.fillText('ASIGNACI\u00d3N DE UNIDADES',PAD,y);
   y+=40;
   const drawA=(mdt,det)=>{g.textAlign='left';g.fillStyle=TEAL;g.font='800 20px "JetBrains Mono",monospace';g.fillText(mdt,PAD+8,y);
