@@ -349,12 +349,12 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
 #pagePlan a, #pagePlan button, #pagePlan select{font-family:inherit}
 #pagePlan :focus-visible{outline:2px solid var(--nov);outline-offset:2px;border-radius:6px}
 #pagePlan .plhd{background:linear-gradient(120deg,var(--dark) 0%,var(--dark2) 100%);border-radius:18px;box-shadow:var(--shadow-lg);
-  padding:20px 24px;display:flex;align-items:center;gap:20px;position:relative;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
+  padding:14px 20px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden;margin-bottom:14px;flex-wrap:wrap}
 #pagePlan .plhd::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
   background:linear-gradient(90deg,var(--nov) 0%,var(--nov) 34%,transparent 34%)}
-#pagePlan .plhd img.pllogo{height:30px;width:auto;display:block;border-radius:7px;box-shadow:0 0 16px rgba(38,181,184,0.35)}
-#pagePlan .plhd .ht{border-left:1px solid rgba(255,255,255,.14);padding-left:20px}
-#pagePlan .plhd h1{font-size:19px;font-weight:800;letter-spacing:-.01em;color:#fff}
+#pagePlan .plhd img.pllogo{height:24px;width:auto;display:block;border-radius:6px;box-shadow:0 0 12px rgba(38,181,184,0.30)}
+#pagePlan .plhd .ht{border-left:1px solid rgba(255,255,255,.14);padding-left:16px}
+#pagePlan .plhd h1{font-size:15px;font-weight:800;letter-spacing:.02em;color:#fff}
 #pagePlan .plhd .sub{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.24em;color:#8fa0ac;text-transform:uppercase;margin-top:4px}
 #pagePlan .ctrls{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
   padding:14px 16px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;margin-bottom:6px}
@@ -364,6 +364,9 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
   border:1px solid var(--line2);border-radius:9px;padding:9px 30px 9px 11px;font-size:13px;color:var(--ink);font-weight:600;cursor:pointer;min-width:120px;max-width:100%;transition:border-color .15s}
 #pagePlan select:hover{border-color:var(--ink-mute)}
 #pagePlan select option{background:var(--surface);color:var(--ink)}
+#pagePlan #shareBtn{background:transparent;border:1px solid var(--line2);color:var(--ink-soft);padding:5px 12px;font-size:11px;font-weight:700;border-radius:8px;letter-spacing:.02em;transition:.15s}
+#pagePlan #shareBtn:hover{border-color:var(--nov);color:#fff}
+#pagePlan #shareBtn:disabled{opacity:.6;cursor:default}
 #pagePlan .plhero .wkbadge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--cyan);border:1px solid var(--cyan);border-radius:7px;padding:2px 8px;margin-left:8px;text-transform:uppercase;vertical-align:middle}
 #pagePlan .btn{background:var(--nov);color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer;transition:background .15s}
 #pagePlan .btn:hover{background:var(--nov-deep)}
@@ -1943,35 +1946,105 @@ function renderSupers(){
   document.getElementById('supgrid').innerHTML=cards
     +`<button class="btn ghost addsup" onclick="addAsig()">+ Asignar camioneta</button>`;
 }
-function shareResumen(){
+function shareText(){
   const L=[];
-  L.push('🚐 FLOTA DIGITAL SERVICE CRV · Semana '+week);
+  L.push('FLOTA DIGITAL SERVICE CRV - Semana '+week);
   L.push('');
-  L.push('RELEVOS DEL DÍA');
+  L.push('RELEVOS DEL DIA');
   relevosData().forEach(r=>{
-    L.push(r.h+':00 hs · '+(r.units.join(', ')||'sin viaje'));
-    L.push('  ⬇ Bajan: '+(r.bajan.join(', ')||'—'));
-    L.push('  ⬆ Suben: '+(r.suben.join(', ')||'—'));
+    L.push(r.h+':00 hs - '+(r.units.join(', ')||'sin viaje'));
+    L.push('  Bajan: '+(r.bajan.join(', ')||'-'));
+    L.push('  Suben: '+(r.suben.join(', ')||'-'));
   });
   L.push('');
-  L.push('ASIGNACIÓN DE UNIDADES');
+  L.push('ASIGNACION DE UNIDADES');
   units.filter(u=>u.a||u.b).forEach(u=>{
-    L.push((u.mdt||'—')+' → '+(u.a||'—')+' ⇄ '+(u.b||'—')+(u.stay?' (queda en campo)':''));
+    L.push((u.mdt||'-')+' -> '+(u.a||'-')+' / '+(u.b||'-')+(u.stay?' (queda en campo)':''));
   });
-  L.push((cp.mdt||'—')+' → '+(cp.tit||'—')+' (CP/Pecom · titular)');
+  L.push((cp.mdt||'-')+' -> '+(cp.tit||'-')+' (CP/Pecom - titular)');
   L.push('');
   L.push('CAMIONETAS EN BASE ASIGNADAS');
-  asig.forEach(x=>{if(x.mdt)L.push(x.mdt+' → '+(x.sup||'—'));});
+  asig.forEach(x=>{if(x.mdt)L.push(x.mdt+' -> '+(x.sup||'-'));});
   L.push('');
   L.push('BACKUPS EN BASE');
-  if(backup.p1)L.push(backup.p1+' · turno 00-12/12-00');
-  if(backup.p2)L.push(backup.p2+' · turno 06-18/18-06');
-  const txt=L.join('\n');
-  if(navigator.share){navigator.share({text:txt}).catch(()=>{});}
-  else{navigator.clipboard.writeText(txt).then(()=>{
-    const b=document.getElementById('shareBtn');const t=b.textContent;
-    b.textContent='✓ Copiado';setTimeout(()=>{b.textContent=t;},1600);
-  });}
+  if(backup.p1)L.push(backup.p1+' - turno 00-12/12-00');
+  if(backup.p2)L.push(backup.p2+' - turno 06-18/18-06');
+  return L.join('\n');
+}
+function _rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();}
+function _fit(g,txt,x,y,maxw,size,weight){let sz=size;g.font=(weight||'700')+' '+sz+'px Inter,Arial,sans-serif';while(g.measureText(txt).width>maxw&&sz>12){sz-=1;g.font=(weight||'700')+' '+sz+'px Inter,Arial,sans-serif';}g.fillText(txt,x,y);}
+async function buildFlyer(){
+  if(document.fonts&&document.fonts.ready){try{await document.fonts.ready;}catch(e){}}
+  const rel=relevosData();
+  const uAsig=units.filter(u=>u.a||u.b);
+  const W=1080,PAD=70,relH=138,asigH=50;
+  const H=330 + rel.length*relH + (uAsig.length+1)*asigH + 150;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const g=cv.getContext('2d');
+  const TEAL='#26b5b8',INK='#eef1f3',MUT='#8fa0ac',RED='#e0554f',GRN='#5dc88a';
+  g.fillStyle='#0e1417';g.fillRect(0,0,W,H);
+  g.fillStyle=TEAL;g.fillRect(0,0,W,10);
+  g.textBaseline='alphabetic';
+  g.fillStyle=INK;g.font='800 44px Inter,Arial,sans-serif';
+  g.fillText('FLOTA \u00b7 DIGITAL SERVICE CRV',PAD,102);
+  g.fillStyle=MUT;g.font='700 19px "JetBrains Mono",monospace';
+  g.fillText('GOLFO SAN JORGE \u00b7 COMODORO RIVADAVIA',PAD,138);
+  const pill='SEMANA '+String(week).toUpperCase();
+  g.font='800 22px "JetBrains Mono",monospace';
+  const pw=g.measureText(pill).width+40;
+  g.fillStyle='rgba(38,181,184,0.12)';g.strokeStyle=TEAL;g.lineWidth=2;
+  _rr(g,W-PAD-pw,66,pw,46,12);g.fill();g.stroke();
+  g.fillStyle=TEAL;g.fillText(pill,W-PAD-pw+20,97);
+  let y=178;
+  g.strokeStyle='rgba(255,255,255,.10)';g.lineWidth=1;g.beginPath();g.moveTo(PAD,y);g.lineTo(W-PAD,y);g.stroke();
+  y+=52;
+  g.fillStyle=INK;g.font='800 23px "JetBrains Mono",monospace';g.fillText('RELEVOS DEL D\u00cdA',PAD,y);
+  y+=26;
+  rel.forEach(r=>{
+    g.fillStyle='rgba(255,255,255,0.035)';_rr(g,PAD,y,W-2*PAD,relH-18,14);g.fill();
+    g.fillStyle=TEAL;g.font='800 40px "JetBrains Mono",monospace';g.fillText(r.h+':00',PAD+26,y+56);
+    g.fillStyle=MUT;g.font='700 15px "JetBrains Mono",monospace';g.fillText((r.units.join('  ')||'SIN VIAJE'),PAD+26,y+88);
+    const cx=PAD+300;
+    g.fillStyle=RED;g.font='800 15px "JetBrains Mono",monospace';g.fillText('BAJAN',cx,y+44);
+    g.fillStyle=INK;_fit(g,(r.bajan.join(' \u00b7 ')||'-'),cx+92,y+44,W-PAD-cx-112,22,'700');
+    g.fillStyle=GRN;g.font='800 15px "JetBrains Mono",monospace';g.fillText('SUBEN',cx,y+84);
+    g.fillStyle=INK;_fit(g,(r.suben.join(' \u00b7 ')||'-'),cx+92,y+84,W-PAD-cx-112,22,'700');
+    y+=relH;
+  });
+  y+=22;
+  g.fillStyle=INK;g.font='800 23px "JetBrains Mono",monospace';g.fillText('ASIGNACI\u00d3N DE UNIDADES',PAD,y);
+  y+=40;
+  const drawA=(mdt,det)=>{g.fillStyle=TEAL;g.font='800 20px "JetBrains Mono",monospace';g.fillText(mdt,PAD+8,y);
+    g.fillStyle=INK;_fit(g,det,PAD+180,y,W-PAD-(PAD+180),20,'700');y+=asigH;};
+  uAsig.forEach(u=>drawA(u.mdt||'-',(u.a||'-')+'   /   '+(u.b||'-')+(u.stay?'    (queda en campo)':'')));
+  drawA(cp.mdt||'-',(cp.tit||'-')+'    (CP/Pecom \u00b7 titular)');
+  g.fillStyle=MUT;g.font='600 15px "JetBrains Mono",monospace';
+  g.fillText('Generado desde el monitor en vivo \u00b7 NOV Digital Service',PAD,H-42);
+  return await new Promise(res=>cv.toBlob(res,'image/png',0.95));
+}
+async function shareResumen(){
+  const btn=document.getElementById('shareBtn');const orig=btn?btn.textContent:'';
+  try{
+    if(btn){btn.textContent='Generando\u2026';btn.disabled=true;}
+    const blob=await buildFlyer();
+    const fname='flota-'+String(week).trim().replace(/\s+/g,'-').toLowerCase()+'.png';
+    const file=new File([blob],fname,{type:'image/png'});
+    const txt=shareText();
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Flota Digital Service CRV',text:txt});
+    }else if(navigator.share){
+      await navigator.share({text:txt});
+    }else{
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fname;
+      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    }
+    if(btn)btn.textContent='Listo';
+  }catch(e){
+    if(e&&e.name==='AbortError'){if(btn)btn.textContent=orig;}
+    else{try{await navigator.clipboard.writeText(shareText());if(btn)btn.textContent='Copiado';}catch(_){if(btn)btn.textContent=orig;}}
+  }finally{
+    if(btn){btn.disabled=false;setTimeout(()=>{btn.textContent=orig;},1800);}
+  }
 }
 function renderFlota(){
   const dup=Math.ceil(calc.tec/2);
