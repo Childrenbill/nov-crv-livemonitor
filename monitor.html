@@ -197,9 +197,9 @@ body::before{content:'';position:fixed;inset:-10%;z-index:0;pointer-events:none;
 .chksw::after{content:'';position:absolute;top:0.18vh;left:0.2vh;width:1.45vh;height:1.45vh;border-radius:50%;background:var(--muted);transition:left .25s,background .25s}
 .chkwrap.on .chksw{background:rgba(93,200,138,0.35);border-color:var(--d)}
 .chkwrap.on .chksw::after{left:2vh;background:var(--d)}
-.kmwrap{display:flex;align-items:center;gap:0.45vw;min-width:0;flex:1}
+.kmwrap{display:flex;align-items:center;gap:0.28vw;min-width:0;flex:1}
 .kmwrap .kmlbl{font-family:'JetBrains Mono',monospace;font-size:1.15vh;color:var(--muted);letter-spacing:0.12em;font-weight:700;flex-shrink:0}
-.kmin{flex:1;min-width:0;width:100%;font-family:'JetBrains Mono',monospace;font-size:1.85vh;font-weight:800;letter-spacing:-0.02em;background:transparent;border:none;border-bottom:1px solid var(--line-2);color:var(--text);border-radius:0;padding:0.1vh 0.2vw;text-align:right}
+.kmin{flex:1;min-width:0;width:100%;font-family:'JetBrains Mono',monospace;font-size:1.55vh;font-weight:800;letter-spacing:-0.03em;background:transparent;border:none;border-bottom:1px solid var(--line-2);color:var(--text);border-radius:0;padding:0.1vh 0;text-align:right}
 .kmin:focus{outline:none;border-bottom-color:var(--max-teal);background:var(--bg-2)}
 .kmin::placeholder{color:var(--muted);font-weight:600}
 .kmdate{font-family:'JetBrains Mono',monospace;font-size:1.1vh;color:var(--muted);white-space:nowrap;flex-shrink:0}
@@ -210,6 +210,7 @@ body::before{content:'';position:fixed;inset:-10%;z-index:0;pointer-events:none;
 .fsvc .svc-rem .sdot{width:1vh;height:1vh;border-radius:50%;flex-shrink:0}
 .fsvc.ok   .svc-rem{color:var(--d)}       .fsvc.ok   .sdot{background:var(--d)}
 .fsvc.warn .svc-rem{color:var(--dn)}      .fsvc.warn .sdot{background:var(--dn)}
+.fsvc.warn{animation:svcblink 1.8s ease-in-out infinite}
 .fsvc.due  .svc-rem{color:#ff6b66}        .fsvc.due  .sdot{background:#d9433f}
 .fsvc.due{animation:svcblink 1.4s ease-in-out infinite}
 @keyframes svcblink{0%,100%{opacity:1}50%{opacity:0.45}}
@@ -945,7 +946,7 @@ function fleetEditing(){
   return g && a && g.contains(a) && (a.tagName==='INPUT' || a.tagName==='SELECT');
 }
 // ===== SERVICE =====
-const SVC_YELLOW=1500, SVC_RED=750, SVC_ALERT_KM=1000;
+const SVC_YELLOW=5500, SVC_RED=750, SVC_ALERT_KM=1000;
 const FLEET_ORDER={campo:0, base:1, taller:2};
 function fmtKm(n){ return (n||0).toLocaleString('es-AR'); }
 function computeSvc(code){
@@ -1760,7 +1761,7 @@ function bkSup(grp){try{const sn=supNow(new Date());const d=supForDate(sn.opDate
 function clearBackupIf(v){if(backup.p1===v)backup.p1='';if(backup.p2===v)backup.p2='';}
 
 function optTec(cur,ph){
-  let o='<option value=""'+(cur?'':' selected')+' disabled>'+(ph||'—')+'</option>';
+  let o='<option value=""'+(cur?'':' selected')+'>— Sin asignar —</option>';
   for(const t of TECS)o+='<option'+(t===cur?' selected':'')+'>'+t+'</option>';
   return o;
 }
