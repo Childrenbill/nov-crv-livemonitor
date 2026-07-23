@@ -320,6 +320,11 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
 .lim-wx .wx-loc{font-family:'JetBrains Mono',monospace;font-size:1.15vh;font-weight:800;letter-spacing:0.14em;color:var(--max-teal);text-transform:uppercase}
 .lim-wx .wx-lbl{font-family:'JetBrains Mono',monospace;font-size:1.05vh;font-weight:800;letter-spacing:0.16em;color:var(--muted);text-transform:uppercase}
 /* ==== FIN MÓDULO LÍMITES ==== */
+/* ===== Solo visualización (candado) ===== */
+body.view-only #pagePlan :is(select,input,button,.tgl,[onclick]){pointer-events:none;opacity:.78}
+body.view-only #pagePlan #shareBtn{pointer-events:auto;opacity:1}
+body.view-only #pageFleet :is(select,input,[onclick]){pointer-events:none;opacity:.78}
+.tabbtn.lockbtn{min-width:auto;padding-left:0.7vw;padding-right:0.7vw}
 
 /* =================== PESTAÑA ASIGNACIÓN · PLANIFICADOR (tema oscuro) =================== */
 #pagePlan{
@@ -535,6 +540,7 @@ body.light .lim-wx .wx-wind{background:rgba(0,0,0,0.05)}
       <button class="tabbtn active" data-page="turnos" onclick="showPage('turnos')">TURNOS</button>
       <button class="tabbtn" data-page="fleet" onclick="showPage('fleet')">FLOTA</button>
       <button class="tabbtn" data-page="plan" onclick="showPage('plan')">ASIGNACIÓN</button>
+      <button class="tabbtn lockbtn" id="lockBtn" onclick="toggleEdit()" title="Modo edición">🔒</button>
     </div>
     <div class="alertbar" id="chkAlert" onclick="showPage('fleet')" title="Ir a Flota">
       <svg class="abico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
@@ -1661,6 +1667,20 @@ function renderWx(){
 }
 // ===== FIN MÓDULO LÍMITES =====
 applyTheme(localStorage.getItem('monitor_theme')||'dark');
+/* ===== Candado de edición ===== */
+const EDIT_PIN='CRV2026';
+function applyEditMode(){const on=localStorage.getItem('monitor_edit')==='1';
+  document.body.classList.toggle('view-only',!on);
+  const b=document.getElementById('lockBtn');
+  if(b){b.textContent=on?'\ud83d\udd13':'\ud83d\udd12';
+    b.title=on?'Edici\u00f3n habilitada \u00b7 tocar para bloquear':'Solo visualizaci\u00f3n \u00b7 tocar para habilitar edici\u00f3n';}}
+function toggleEdit(){const on=localStorage.getItem('monitor_edit')==='1';
+  if(on){localStorage.removeItem('monitor_edit');}
+  else{const p=prompt('Clave de edici\u00f3n:');if(p===null)return;
+    if(p.trim()===EDIT_PIN){localStorage.setItem('monitor_edit','1');}
+    else{alert('Clave incorrecta');return;}}
+  applyEditMode();}
+applyEditMode();
 seedFleetIfNeeded();
 tick(); render(); lastKey=stateKey(); updateLimits(); fetchWeather();
 setInterval(()=>{
@@ -2142,12 +2162,41 @@ function mdtLive(id){
   }
   return '<div class="mdtlive">'+parts.join('')+'</div>';
 }
-function render(){renderRows();renderCp();renderBase();renderRel();renderSupers();renderFlota();}
+/* ===== sincronización del plan por Firebase ===== */
+let planReady=false, planApplying=false, planPending=null;
+function planArr(x){return Array.isArray(x)?x.filter(Boolean):(x?Object.values(x):[]);}
+function planEditing(){const pp=document.getElementById('pagePlan');const a=document.activeElement;
+  return pp&&a&&pp.contains(a)&&(a.tagName==='SELECT'||a.tagName==='INPUT');}
+function savePlan(){ if(!planReady||planApplying) return;
+  try{ fbdb.ref('plan').set({week,units,cp,asig,backup,ts:Date.now()}); }catch(e){} }
+function applyPlan(v){
+  planApplying=true;
+  try{
+    if(v.week&&DIAG[v.week]){week=v.week;const ws=document.getElementById('wkSel');if(ws)ws.value=week;}
+    units=planArr(v.units); asig=planArr(v.asig);
+    cp=Object.assign({tit:'',rel:'',mdt:CP_MDT},v.cp||{});
+    backup=Object.assign({p1:'',p2:''},v.backup||{});
+    uid=units.reduce((m,u)=>Math.max(m,u.id||0),0)+1;
+    aid=asig.reduce((m,x)=>Math.max(m,x.id||0),0)+1;
+    render();
+  } finally { planApplying=false; }
+}
+function render(){renderRows();renderCp();renderBase();renderRel();renderSupers();renderFlota();savePlan();}
 
 /* ===== exponer handlers para los onclick/onchange inline ===== */
 window.__planRender = render;
 Object.assign(window, {loadWeek,setMdt,setBase,rmUnit,setA,setB,setStay,addUnit,setBk,setCpMdt,addAsig,rmAsig,setAsigSup,setAsigMdt,shareResumen,cchg,ctgl});
 initSelectors(); loadWeek();
+fbdb.ref('plan').on('value', snap=>{
+  const v=snap.val();
+  if(!v){ planReady=true; savePlan(); return; }   // primera vez: publica el estado local
+  planReady=true;
+  if(planEditing()){ planPending=v; return; }     // no pisar mientras alguien edita acá
+  applyPlan(v);
+});
+document.getElementById('pagePlan').addEventListener('focusout',()=>{
+  setTimeout(()=>{ if(planPending && !planEditing()){ const v=planPending; planPending=null; applyPlan(v); } },150);
+});
 
 })();
 
